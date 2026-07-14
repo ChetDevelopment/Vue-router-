@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "TokLok Cambodia",
+    "slug": "toklok-cambodia",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "toklok",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#121212"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "kh.toklok.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#121212"
+      },
+      "package": "kh.toklok.app"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "TokLok needs camera access to record and share videos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "TokLok needs photo library access to upload media."
+        }
+      ]
+    ]
+  }
+}
