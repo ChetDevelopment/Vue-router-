@@ -9,8 +9,8 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: '#D85A30',
+        tabBarInactiveTintColor: '#888780',
         tabBarShowLabel: true,
         tabBarLabelStyle: styles.tabLabel,
       }}
@@ -19,14 +19,14 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Feed',
-          tabBarIcon: ({ color, size }) => <Home size={size} color={color} strokeWidth={2} />,
+          tabBarIcon: ({ color, size }) => <Home size={size} color={color as string} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Explore',
-          tabBarIcon: ({ color, size }) => <Search size={size} color={color} strokeWidth={2} />,
+          tabBarIcon: ({ color, size }) => <Search size={size} color={color as string} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
@@ -44,14 +44,14 @@ export default function TabLayout() {
         name="notifications"
         options={{
           title: 'Alerts',
-          tabBarIcon: ({ color, size }) => <Bell size={size} color={color} strokeWidth={2} />,
+          tabBarIcon: ({ color, size }) => <Bell size={size} color={color as string} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => <User size={size} color={color} strokeWidth={2} />,
+          tabBarIcon: ({ color, size }) => <User size={size} color={color as string} strokeWidth={2} />,
         }}
       />
     </Tabs>

@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.black,
     justifyContent: 'flex-end',
   },
-  mediaContainer: { ...StyleSheet.absoluteFillObject },
+  mediaContainer: StyleSheet.absoluteFillObject,
   media: { width: '100%', height: '100%', resizeMode: 'cover' },
   playOverlay: {
     ...StyleSheet.absoluteFillObject,

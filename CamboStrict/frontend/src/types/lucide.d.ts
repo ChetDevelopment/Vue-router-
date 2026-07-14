@@ -5,5 +5,6 @@ declare module 'lucide-react-native' {
     color?: string;
     fill?: string;
     strokeWidth?: number;
+    style?: any;
   }
 }
