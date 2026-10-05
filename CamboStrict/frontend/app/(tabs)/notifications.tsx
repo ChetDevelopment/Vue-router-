@@ -1,36 +1,83 @@
-import { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
-import { Bell, Check } from 'lucide-react-native';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { Bell, Check, MessageCircle } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { usePostStore } from '../../src/stores/postStore';
+import { useNotificationStore } from '../../src/stores/notificationStore';
 import { useAuthStore } from '../../src/stores/authStore';
 import { NotificationItem } from '../../src/components/notifications/NotificationItem';
+import { Toast } from '../../src/components/ui/Toast';
 import { colors, borderRadius, fontSize, spacing } from '../../src/constants/theme';
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
   const { currentUser } = useAuthStore();
-  const { notifications, readNotification, markAllNotificationsRead } = usePostStore();
+  const {
+    notifications, readNotification, markAllNotificationsRead,
+    fetchNotifications, acceptFollowRequest, declineFollowRequest, startPolling, isLoading,
+  } = useNotificationStore();
 
-  const userNotifs = notifications.filter((n) => n.userId === currentUser?.id);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'likes' | 'comments' | 'system'>('all');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const unreadCount = userNotifs.filter((n) => !n.isRead).length;
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 2500);
+  }, []);
 
-  const filtered = userNotifs.filter((n) => {
-    if (activeFilter === 'all') return true;
-    if (activeFilter === 'likes') return n.type === 'like';
-    if (activeFilter === 'comments') return n.type === 'comment' || n.type === 'mention';
-    if (activeFilter === 'system') return n.type === 'system';
-    return true;
-  });
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
-  const filters = [
+  // Start 30s polling with AppState awareness
+  useEffect(() => {
+    const stop = startPolling();
+    return stop;
+  }, [startPolling]);
+
+  const [activeFilter, setActiveFilter] = useState<'all' | 'likes' | 'comments' | 'follow_requests' | 'system'>('all');
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchNotifications();
+    setRefreshing(false);
+  }, [fetchNotifications]);
+
+  const userNotifs = useMemo(() =>
+    notifications.filter((n) => n.userId === currentUser?.id),
+    [notifications, currentUser?.id]
+  );
+
+  const unreadCount = useMemo(() =>
+    userNotifs.filter((n) => !n.isRead).length,
+    [userNotifs]
+  );
+
+  const filtered = useMemo(() =>
+    userNotifs.filter((n) => {
+      if (activeFilter === 'all') return true;
+      if (activeFilter === 'likes') return n.type === 'like';
+      if (activeFilter === 'comments') return n.type === 'comment' || n.type === 'mention';
+      if (activeFilter === 'follow_requests') return n.type === 'follow_request';
+      if (activeFilter === 'system') return n.type === 'system';
+      return true;
+    }),
+    [userNotifs, activeFilter]
+  );
+
+  const filters = useMemo(() => [
     { id: 'all' as const, label: 'All', count: userNotifs.filter((n) => !n.isRead).length },
     { id: 'likes' as const, label: 'Likes', count: userNotifs.filter((n) => !n.isRead && n.type === 'like').length },
     { id: 'comments' as const, label: 'Comments', count: userNotifs.filter((n) => !n.isRead && (n.type === 'comment' || n.type === 'mention')).length },
+    { id: 'follow_requests' as const, label: 'Requests', count: userNotifs.filter((n) => !n.isRead && n.type === 'follow_request').length },
     { id: 'system' as const, label: 'System', count: userNotifs.filter((n) => !n.isRead && n.type === 'system').length },
-  ];
+  ], [userNotifs]);
+
+  const handleNotificationPress = useCallback((notification: any) => {
+    readNotification(notification.id);
+    if (notification.type === 'like' || notification.type === 'comment' || notification.type === 'mention') {
+      if (notification.targetId) router.push(`/post/${notification.targetId}`);
+    } else if (notification.type === 'follow' || notification.type === 'follow_request') {
+      router.push(`/user/${notification.actorId}`);
+    }
+  }, [readNotification]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -42,12 +89,17 @@ export default function NotificationsScreen() {
             <Text style={styles.subtitle}>{unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}</Text>
           </View>
         </View>
-        {unreadCount > 0 && (
-          <TouchableOpacity onPress={markAllNotificationsRead} style={styles.markReadBtn}>
-            <Check size={11} color={colors.accent} />
-            <Text style={styles.markReadText}>Mark read</Text>
+        <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => router.push('/inbox')} style={styles.markReadBtn}>
+            <MessageCircle size={14} color={colors.accent} />
           </TouchableOpacity>
-        )}
+          {unreadCount > 0 && (
+            <TouchableOpacity onPress={markAllNotificationsRead} style={styles.markReadBtn}>
+              <Check size={11} color={colors.accent} />
+              <Text style={styles.markReadText}>Mark read</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <FlatList
@@ -75,17 +127,31 @@ export default function NotificationsScreen() {
         }}
       />
 
+      {isLoading && filtered.length === 0 ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.accent} />
+        </View>
+      ) : (
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <NotificationItem
             notification={item}
-            onPress={() => readNotification(item.id)}
-            onAcceptFollow={item.type === 'follow_request' ? () => readNotification(item.id) : undefined}
+            onPress={() => handleNotificationPress(item)}
+            onAcceptFollow={item.type === 'follow_request'
+              ? () => acceptFollowRequest(item.id, item.actorId)
+              : undefined
+            }
+            onDeclineFollow={item.type === 'follow_request'
+              ? () => declineFollowRequest(item.id, item.actorId)
+              : undefined
+            }
           />
         )}
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm, paddingBottom: 100 }}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyText}>Empty Alerts</Text>
@@ -94,6 +160,8 @@ export default function NotificationsScreen() {
         }
         showsVerticalScrollIndicator={false}
       />
+      )}
+      <Toast message={toastMessage} />
     </View>
   );
 }

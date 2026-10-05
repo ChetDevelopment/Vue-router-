@@ -1,0 +1,28 @@
+# IDE
+.idea/
+.vscode/
+
+# Expo
+.expo/
+web-build/
+
+# Dependencies
+node_modules/
+
+# Backend build
+backend/target/
+backend/*.jar
+backend/.opencode/
+backend/toklok.db
+backend/*.db
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Logs / OS
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini

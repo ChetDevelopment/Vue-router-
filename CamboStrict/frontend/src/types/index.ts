@@ -24,6 +24,7 @@ export interface User {
   followerCount: number;
   followingCount: number;
   totalLikesReceived: number;
+  isFollowing?: boolean;
 }
 
 export interface Post {
@@ -43,10 +44,12 @@ export interface Post {
   likeCount: number;
   commentCount: number;
   shareCount: number;
+  viewCount: number;
   createdAt: string;
   isLikedByUser?: boolean;
   isBookmarkedByUser?: boolean;
   isFollowingCreator?: boolean;
+  isArchived?: boolean;
   remixOfPostId?: string;
   remixOfUsername?: string;
   soundId?: string;
@@ -126,29 +129,6 @@ export interface VisualFilter {
   id: string;
   name: string;
   style: string;
-}
-
-export interface PaymentProvider {
-  id: string;
-  name: string;
-  color: string;
-  logoBg: string;
-  badge: string;
-  description: string;
-}
-
-export interface PresetAmount {
-  riel: number;
-  usd: number;
-  label: string;
-  icon: string;
-}
-
-export interface Playlist {
-  id: string;
-  name: string;
-  emoji: string;
-  postIds: string[];
 }
 
 export interface ReportAction {

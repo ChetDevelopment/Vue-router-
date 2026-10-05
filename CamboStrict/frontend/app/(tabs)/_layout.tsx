@@ -1,14 +1,37 @@
+import { useEffect, useState } from 'react';
 import { Tabs } from 'expo-router';
 import { Home, Search, PlusSquare, Bell, User } from 'lucide-react-native';
+import { useNotificationStore } from '../../src/stores/notificationStore';
+import { useAuthStore } from '../../src/stores/authStore';
+import { api } from '../../src/api/client';
 import { colors } from '../../src/constants/theme';
 import { View, Text, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+  const { notifications, startPolling } = useNotificationStore();
+  const { currentUser } = useAuthStore();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    // Fetch initial count from API for accurate badge
+    useNotificationStore.getState().getUnreadCount().then(setUnreadCount).catch(() => {});
+    const stop = startPolling();
+    return stop;
+  }, [currentUser, startPolling]);
+
+  useEffect(() => {
+    if (currentUser) {
+      setUnreadCount(notifications.filter((n) => !n.isRead).length);
+    }
+  }, [notifications, currentUser]);
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { paddingBottom: Math.max(8, insets.bottom) }],
         tabBarActiveTintColor: '#D85A30',
         tabBarInactiveTintColor: '#888780',
         tabBarShowLabel: true,
@@ -44,7 +67,16 @@ export default function TabLayout() {
         name="notifications"
         options={{
           title: 'Alerts',
-          tabBarIcon: ({ color, size }) => <Bell size={size} color={color as string} strokeWidth={2} />,
+          tabBarIcon: ({ color, size }) => (
+            <View>
+              <Bell size={size} color={color as string} strokeWidth={2} />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
@@ -63,14 +95,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     borderTopColor: colors.border,
     borderTopWidth: 1,
-    height: 60,
-    paddingBottom: 8,
-    paddingTop: 8,
+    height: 65,
+    paddingBottom: 12,
+    paddingTop: 6,
   },
   tabLabel: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
+    marginBottom: 2,
   },
+  badge: { position: 'absolute', top: -4, right: -6, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: '#E24B4A', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3 },
+  badgeText: { color: '#fff', fontSize: 9, fontWeight: '800' },
   createBtn: {
     width: 40,
     height: 40,
@@ -78,6 +113,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -8,
   },
 });

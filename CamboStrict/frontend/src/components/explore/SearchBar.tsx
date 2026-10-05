@@ -1,6 +1,7 @@
 import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Search, X } from 'lucide-react-native';
 import { colors, borderRadius, fontSize, spacing } from '../../constants/theme';
+import { noOutline } from '../../stores/shared/constants';
 
 interface SearchBarProps {
   value: string;
@@ -17,7 +18,7 @@ export function SearchBar({ value, onChangeText, placeholder = 'Search creators,
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={colors.textMuted}
-        style={styles.input}
+        style={[styles.input, noOutline]}
       />
       {value.length > 0 && (
         <TouchableOpacity onPress={() => onChangeText('')} style={styles.clearBtn}>

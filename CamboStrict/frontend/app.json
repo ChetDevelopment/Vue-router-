@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "toklok",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
@@ -15,14 +14,44 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "kh.toklok.app"
+      "bundleIdentifier": "kh.toklok.app",
+      "associatedDomains": ["applinks:toklok.kh"]
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#121212"
       },
-      "package": "kh.toklok.app"
+      "package": "kh.toklok.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "toklok",
+              "host": "*",
+              "pathPrefix": "/post"
+            },
+            {
+              "scheme": "toklok",
+              "host": "*",
+              "pathPrefix": "/user"
+            },
+            {
+              "scheme": "https",
+              "host": "toklok.kh",
+              "pathPrefix": "/post"
+            },
+            {
+              "scheme": "https",
+              "host": "toklok.kh",
+              "pathPrefix": "/user"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "plugins": [
       "expo-router",
@@ -37,7 +66,21 @@
         {
           "photosPermission": "TokLok needs photo library access to upload media."
         }
+      ],
+      "expo-video",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#D85A30"
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "toklok-cambodia"
+      }
+    }
   }
 }

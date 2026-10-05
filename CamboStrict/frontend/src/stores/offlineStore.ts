@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface OfflineState {
   isOfflineSimulated: boolean;
@@ -9,22 +11,32 @@ interface OfflineState {
   addDraft: (draft: any) => void;
   setSyncing: (syncing: boolean) => void;
   setSyncProgress: (progress: number) => void;
+  reset: () => void;
 }
 
-export const useOfflineStore = create<OfflineState>((set) => ({
-  isOfflineSimulated: false,
-  drafts: [],
-  isSyncing: false,
-  syncProgress: 0,
+export const useOfflineStore = create<OfflineState>()(
+  persist(
+    (set) => ({
+      isOfflineSimulated: false,
+      drafts: [],
+      isSyncing: false,
+      syncProgress: 0,
 
-  toggleOffline: () => set((state) => ({ isOfflineSimulated: !state.isOfflineSimulated })),
+      toggleOffline: () => set((state) => ({ isOfflineSimulated: !state.isOfflineSimulated })),
 
-  addDraft: (draft) =>
-    set((state) => {
-      const updated = [...state.drafts, draft];
-      return { drafts: updated };
+      addDraft: (draft) =>
+        set((state) => {
+          const updated = [...state.drafts, draft];
+          return { drafts: updated };
+        }),
+
+      setSyncing: (syncing) => set({ isSyncing: syncing }),
+      setSyncProgress: (progress) => set({ syncProgress: progress }),
+      reset: () => set({ isOfflineSimulated: false, drafts: [], isSyncing: false, syncProgress: 0 }),
     }),
-
-  setSyncing: (syncing) => set({ isSyncing: syncing }),
-  setSyncProgress: (progress) => set({ syncProgress: progress }),
-}));
+    {
+      name: 'offline-storage',
+      storage: createJSONStorage(() => AsyncStorage),
+    }
+  )
+);

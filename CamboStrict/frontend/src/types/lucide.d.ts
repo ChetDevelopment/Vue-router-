@@ -1,10 +1,83 @@
-import 'lucide-react-native';
-
 declare module 'lucide-react-native' {
+  import { FC } from 'react';
+  import { TextStyle, ViewStyle } from 'react-native';
+
   interface LucideProps {
     color?: string;
     fill?: string;
     strokeWidth?: number;
-    style?: any;
+    size?: number | string;
+    style?: ViewStyle | TextStyle;
   }
+
+  export const Home: FC<LucideProps>;
+  export const Search: FC<LucideProps>;
+  export const PlusSquare: FC<LucideProps>;
+  export const Bell: FC<LucideProps>;
+  export const User: FC<LucideProps>;
+  export const Heart: FC<LucideProps>;
+  export const MessageCircle: FC<LucideProps>;
+  export const Bookmark: FC<LucideProps>;
+  export const Share2: FC<LucideProps>;
+  export const Music: FC<LucideProps>;
+  export const MapPin: FC<LucideProps>;
+  export const Volume2: FC<LucideProps>;
+  export const VolumeX: FC<LucideProps>;
+  export const X: FC<LucideProps>;
+  export const Send: FC<LucideProps>;
+  export const Hash: FC<LucideProps>;
+  export const Users: FC<LucideProps>;
+  export const Flame: FC<LucideProps>;
+  export const Play: FC<LucideProps>;
+  export const Layers: FC<LucideProps>;
+  export const ArrowLeft: FC<LucideProps>;
+  export const CheckCircle2: FC<LucideProps>;
+  export const CheckCircle: FC<LucideProps>;
+  export const ChevronRight: FC<LucideProps>;
+  export const ChevronDown: FC<LucideProps>;
+  export const Smartphone: FC<LucideProps>;
+  export const Mail: FC<LucideProps>;
+  export const Lock: FC<LucideProps>;
+  export const ArrowRight: FC<LucideProps>;
+  export const Check: FC<LucideProps>;
+  export const Edit2: FC<LucideProps>;
+  export const Globe: FC<LucideProps>;
+  export const ExternalLink: FC<LucideProps>;
+
+  export const UserPlus: FC<LucideProps>;
+  export const TrendingUp: FC<LucideProps>;
+  export const Grid: FC<LucideProps>;
+  export const BarChart2: FC<LucideProps>;
+  export const Camera: FC<LucideProps>;
+  export const Image: FC<LucideProps>;
+  export const Sliders: FC<LucideProps>;
+  export const Zap: FC<LucideProps>;
+  export const RefreshCw: FC<LucideProps>;
+  export const FolderOpen: FC<LucideProps>;
+  export const CloudOff: FC<LucideProps>;
+  export const Wifi: FC<LucideProps>;
+  export const Sparkles: FC<LucideProps>;
+  export const Keyboard: FC<LucideProps>;
+  export const ShieldAlert: FC<LucideProps>;
+  export const EyeOff: FC<LucideProps>;
+  export const AlertOctagon: FC<LucideProps>;
+  export const Video: FC<LucideProps>;
+  export const QrCode: FC<LucideProps>;
+  export const Award: FC<LucideProps>;
+  export const Info: FC<LucideProps>;
+  export const AtSign: FC<LucideProps>;
+  export const UserCheck: FC<LucideProps>;
+  export const Eye: FC<LucideProps>;
+  export const MessageSquare: FC<LucideProps>;
+  export const Shield: FC<LucideProps>;
+  export const Database: FC<LucideProps>;
+  export const Monitor: FC<LucideProps>;
+  export const HelpCircle: FC<LucideProps>;
+  export const Trash2: FC<LucideProps>;
+  export const LogIn: FC<LucideProps>;
+  export const LogOut: FC<LucideProps>;
+  export const Moon: FC<LucideProps>;
+  export const Trophy: FC<LucideProps>;
+  export const BadgeCheck: FC<LucideProps>;
+  export const Crown: FC<LucideProps>;
 }

@@ -1,5 +1,6 @@
 import { Image, View, StyleSheet, ViewStyle } from 'react-native';
 import { colors, borderRadius } from '../../constants/theme';
+import { BadgeCheck } from 'lucide-react-native';
 
 interface AvatarProps {
   uri: string;
@@ -19,11 +20,8 @@ export function Avatar({ uri, size = 40, isVerified = false, style }: AvatarProp
         ]}
       />
       {isVerified && (
-        <View style={[styles.badge, { width: size * 0.35, height: size * 0.35, borderRadius: size * 0.175 }]}>
-          <Image
-            source={{ uri: 'https://img.icons8.com/color/48/verified-badge.png' }}
-            style={{ width: '100%', height: '100%' }}
-          />
+        <View style={[styles.badge, { width: size * 0.35, height: size * 0.35, borderRadius: size * 0.175, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }]}>
+          <BadgeCheck size={size * 0.25} color={colors.white} />
         </View>
       )}
     </View>

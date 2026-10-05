@@ -1,14 +1,16 @@
+import { memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Heart, MessageCircle, UserPlus, Bell, AtSign, ShieldAlert, UserCheck } from 'lucide-react-native';
 import { Notification } from '../../types';
 import { colors, borderRadius, fontSize, spacing } from '../../constants/theme';
 import { Avatar } from '../ui/Avatar';
-import { formatDate } from '../../utils/format';
+import { formatRelativeTime } from '../../utils/format';
 
 interface NotificationItemProps {
   notification: Notification;
   onPress: () => void;
   onAcceptFollow?: () => void;
+  onDeclineFollow?: () => void;
 }
 
 const typeConfig: Record<string, { icon: any; color: string }> = {
@@ -33,7 +35,7 @@ const getLabel = (type: string) => {
   return labels[type] || 'interacted with you.';
 };
 
-export function NotificationItem({ notification, onPress, onAcceptFollow }: NotificationItemProps) {
+export const NotificationItem = memo(function NotificationItem({ notification, onPress, onAcceptFollow, onDeclineFollow }: NotificationItemProps) {
   const config = typeConfig[notification.type] || { icon: Bell, color: colors.textMuted };
   const Icon = config.icon;
 
@@ -74,19 +76,19 @@ export function NotificationItem({ notification, onPress, onAcceptFollow }: Noti
               <UserCheck size={10} color={colors.white} />
               <Text style={styles.approveText}>Approve</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={onPress} style={styles.ignoreBtn}>
+            <TouchableOpacity onPress={onDeclineFollow || onPress} style={styles.ignoreBtn}>
               <Text style={styles.ignoreText}>Ignore</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        <Text style={styles.date}>{formatDate(notification.createdAt)}</Text>
+        <Text style={styles.date}>{formatRelativeTime(notification.createdAt)}</Text>
       </View>
 
       {!notification.isRead && <View style={styles.unreadDot} />}
     </TouchableOpacity>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

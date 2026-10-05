@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { Edit2, Globe, ExternalLink, Gift, UserPlus, TrendingUp, Grid, Bookmark, BarChart2 } from 'lucide-react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Platform, ActivityIndicator } from 'react-native';
+import { router } from 'expo-router';
+import { Edit2, Globe, ExternalLink, UserPlus, TrendingUp, Grid, Bookmark, BarChart2, Camera, Shield } from 'lucide-react-native';
 import { User } from '../../types';
 import { colors, borderRadius, fontSize, spacing } from '../../constants/theme';
 import { Avatar } from '../ui/Avatar';
 import { formatCount } from '../../utils/format';
+import { noOutline } from '../../stores/shared/constants';
+import * as Linking from 'expo-linking';
 
 interface ProfileHeaderProps {
   user: User;
@@ -12,7 +15,7 @@ interface ProfileHeaderProps {
   onSaveProfile: (fields: Partial<User>) => void;
   onToggleCreator: () => void;
   onOpenSettings: () => void;
-  onSupportCreator?: (user: any) => void;
+  onFollowUser?: (userId: string) => void;
   activeTab: 'posts' | 'saved' | 'analytics';
   onTabChange: (tab: 'posts' | 'saved' | 'analytics') => void;
   postCount: number;
@@ -24,7 +27,7 @@ export function ProfileHeader({
   onSaveProfile,
   onToggleCreator,
   onOpenSettings,
-  onSupportCreator,
+  onFollowUser,
   activeTab,
   onTabChange,
   postCount,
@@ -33,9 +36,47 @@ export function ProfileHeader({
   const [displayName, setDisplayName] = useState(user.displayName);
   const [bio, setBio] = useState(user.bio);
   const [link, setLink] = useState(user.link || '');
+  const [avatarUri, setAvatarUri] = useState(user.avatarUrl);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  const pickAvatar = async () => {
+    if (Platform.OS === 'web') return;
+    const ImagePicker = await import('expo-image-picker');
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      const localUri = result.assets[0].uri;
+      setIsUploadingAvatar(true);
+      try {
+        const formData = new FormData();
+        const filename = localUri.split('/').pop() || 'avatar.jpg';
+        formData.append('file', { uri: localUri, name: filename, type: 'image/jpeg' } as any);
+        const { api } = await import('../../api/client');
+        const data = await api.users.uploadAvatar(formData);
+        setAvatarUri(data?.avatarUrl || localUri);
+      } catch {
+        setAvatarUri(localUri);
+      } finally {
+        setIsUploadingAvatar(false);
+      }
+    }
+  };
 
   const handleSave = () => {
-    onSaveProfile({ displayName, bio, link });
+    if (!displayName.trim()) { Alert.alert('Error', 'Display name cannot be empty'); return; }
+    onSaveProfile({ displayName: displayName.trim(), bio: bio.trim(), link: link.trim(), avatarUrl: avatarUri });
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setAvatarUri(user.avatarUrl);
+    setDisplayName(user.displayName);
+    setBio(user.bio);
+    setLink(user.link || '');
     setIsEditing(false);
   };
 
@@ -49,7 +90,12 @@ export function ProfileHeader({
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <View style={styles.usernameRow}>
-          <Text style={styles.studioBadge}>{isOwnProfile ? 'My Studio' : 'Creator Profile'}</Text>
+          {user.isCreator && (
+            <View style={styles.creatorBadge}>
+              <Shield size={12} color={colors.accent} />
+              <Text style={styles.creatorBadgeText}>Creator</Text>
+            </View>
+          )}
           <Text style={styles.username}>@{user.username}</Text>
         </View>
         {isOwnProfile && (
@@ -61,7 +107,19 @@ export function ProfileHeader({
 
       <View style={styles.profileSection}>
         <View style={styles.avatarWrap}>
-          <Avatar uri={user.avatarUrl} size={72} isVerified={user.isVerified} />
+          <TouchableOpacity onPress={isEditing ? pickAvatar : undefined} disabled={!isEditing}>
+            <Avatar uri={avatarUri} size={72} isVerified={user.isVerified} />
+            {isUploadingAvatar && (
+              <View style={[styles.avatarEditOverlay, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                <ActivityIndicator size="small" color={colors.white} />
+              </View>
+            )}
+            {isEditing && !isUploadingAvatar && (
+              <View style={styles.avatarEditOverlay}>
+                <Camera size={14} color={colors.white} />
+              </View>
+            )}
+          </TouchableOpacity>
           {isOwnProfile && !isEditing && (
             <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.editBadge}>
               <Edit2 size={10} color={colors.white} />
@@ -71,11 +129,11 @@ export function ProfileHeader({
 
         {isEditing ? (
           <View style={styles.editForm}>
-            <TextInput value={displayName} onChangeText={setDisplayName} style={styles.editInput} placeholder="Display Name" placeholderTextColor={colors.textMuted} />
-            <TextInput value={bio} onChangeText={setBio} style={[styles.editInput, styles.editBio]} placeholder="Bio" placeholderTextColor={colors.textMuted} multiline />
-            <TextInput value={link} onChangeText={setLink} style={styles.editInput} placeholder="Link" placeholderTextColor={colors.textMuted} />
+            <TextInput value={displayName} onChangeText={setDisplayName} style={[styles.editInput, noOutline]} placeholder="Display Name" placeholderTextColor={colors.textMuted} />
+            <TextInput value={bio} onChangeText={setBio} style={[styles.editInput, styles.editBio, noOutline]} placeholder="Bio" placeholderTextColor={colors.textMuted} multiline />
+            <TextInput value={link} onChangeText={setLink} style={[styles.editInput, noOutline]} placeholder="Link" placeholderTextColor={colors.textMuted} />
             <View style={styles.editActions}>
-              <TouchableOpacity onPress={() => setIsEditing(false)} style={styles.cancelBtn}>
+              <TouchableOpacity onPress={handleCancel} style={styles.cancelBtn}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleSave} style={styles.saveBtn}>
@@ -88,25 +146,19 @@ export function ProfileHeader({
             <Text style={styles.displayName}>{user.displayName}</Text>
             <Text style={styles.bio}>{user.bio}</Text>
             {user.link && (
-              <View style={styles.linkRow}>
+              <TouchableOpacity onPress={() => { try { const l = user.link || ''; Linking.openURL(l.startsWith('http') ? l : 'https://' + l); } catch (e) { console.error(e); } }} style={styles.linkRow}>
                 <Globe size={10} color={colors.accent} />
                 <Text style={styles.linkText}>{user.link}</Text>
                 <ExternalLink size={8} color={colors.accent} />
-              </View>
+              </TouchableOpacity>
             )}
             <View style={styles.actionRow}>
               {!isOwnProfile ? (
                 <>
-                  <TouchableOpacity style={styles.followBtn}>
+                  <TouchableOpacity onPress={() => onFollowUser?.(user.id)} style={styles.followBtn}>
                     <UserPlus size={13} color={colors.white} />
                     <Text style={styles.followBtnText}>Follow</Text>
                   </TouchableOpacity>
-                  {onSupportCreator && (
-                    <TouchableOpacity onPress={onSupportCreator} style={styles.supportBtn}>
-                      <Gift size={13} color={colors.white} />
-                      <Text style={styles.supportBtnText}>Support Creator</Text>
-                    </TouchableOpacity>
-                  )}
                 </>
               ) : (
                 <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.editProfileBtn}>
@@ -119,18 +171,37 @@ export function ProfileHeader({
         )}
 
         <View style={styles.statsRow}>
-          <StatItem value={formatCount(user.followerCount)} label="Followers" />
-          <StatItem value={formatCount(user.followingCount)} label="Following" />
-          <StatItem value={formatCount(user.totalLikesReceived)} label="Likes" />
+          <TouchableOpacity onPress={isOwnProfile ? () => router.push(`/followers/${user.id}`) : undefined} style={styles.statItem}>
+            <Text style={styles.statValue}>{formatCount(user.followerCount)}</Text><Text style={styles.statLabel}>Followers</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={isOwnProfile ? () => router.push(`/following/${user.id}`) : undefined} style={styles.statItem}>
+            <Text style={styles.statValue}>{formatCount(user.followingCount)}</Text><Text style={styles.statLabel}>Following</Text>
+          </TouchableOpacity>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{formatCount(postCount)}</Text><Text style={styles.statLabel}>Posts</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{formatCount(user.totalLikesReceived)}</Text><Text style={styles.statLabel}>Likes</Text>
+          </View>
         </View>
 
         {isOwnProfile && !isEditing && (
-          <TouchableOpacity onPress={onToggleCreator} style={styles.creatorToggle}>
-            <TrendingUp size={14} color={user.isCreator ? colors.text : colors.accent} />
-            <Text style={[styles.creatorText, !user.isCreator && { color: colors.accent }]}>
-              {user.isCreator ? 'Creator Analytics Active' : 'Switch to Creator Profile'}
-            </Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity onPress={() => router.push('/collections')} style={[styles.creatorToggle, { borderColor: colors.border }]}>
+              <Bookmark size={14} color={colors.accent} />
+              <Text style={[styles.creatorText, { color: colors.accent }]}>Collections</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/leaderboard')} style={[styles.creatorToggle, { borderColor: colors.border }]}>
+              <TrendingUp size={14} color={colors.accent} />
+              <Text style={[styles.creatorText, { color: colors.accent }]}>Leaderboard</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onToggleCreator} style={styles.creatorToggle}>
+              <TrendingUp size={14} color={user.isCreator ? colors.text : colors.accent} />
+              <Text style={[styles.creatorText, !user.isCreator && { color: colors.accent }]}>
+                {user.isCreator ? 'Creator mode on' : 'Enable creator mode'}
+              </Text>
+            </TouchableOpacity>
+          </>
         )}
       </View>
 
@@ -175,18 +246,13 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   usernameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  studioBadge: {
-    color: colors.accent,
-    fontSize: fontSize.xs,
-    fontWeight: '700',
-    backgroundColor: 'rgba(216,90,48,0.1)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(216,90,48,0.25)',
-    overflow: 'hidden',
+  creatorBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: 'rgba(216,90,48,0.12)',
+    paddingHorizontal: spacing.sm, paddingVertical: 3,
+    borderRadius: borderRadius.md, borderWidth: 1, borderColor: 'rgba(216,90,48,0.25)',
   },
+  creatorBadgeText: { color: colors.accent, fontSize: 10, fontWeight: '700' },
   username: { color: colors.text, fontWeight: '700', fontSize: fontSize.sm },
   settingsBtn: {
     width: 32,
@@ -198,127 +264,67 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  profileSection: { padding: spacing.lg, alignItems: 'center', gap: spacing.md },
+  profileSection: { alignItems: 'center', padding: spacing.xl, gap: spacing.sm },
   avatarWrap: { position: 'relative' },
+  avatarEditOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 36, backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center', alignItems: 'center',
+  },
   editBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: 'absolute', bottom: 0, right: 0,
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: colors.accent, justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: colors.bg,
   },
-  profileInfo: { alignItems: 'center', gap: spacing.sm, width: '100%' },
-  displayName: { color: colors.text, fontSize: fontSize.lg, fontWeight: '700' },
-  bio: { color: colors.textMuted, fontSize: fontSize.sm, textAlign: 'center', maxWidth: 280 },
-  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  linkText: { color: colors.accent, fontSize: fontSize.xs, fontWeight: '700' },
-  actionRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
-  followBtn: {
-    flexDirection: 'row',
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
+  editForm: { width: '100%', gap: spacing.sm },
+  editInput: { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.md, padding: spacing.sm, color: colors.text, fontSize: fontSize.sm },
+  editBio: { minHeight: 60, textAlignVertical: 'top' },
+  editActions: { flexDirection: 'row', gap: spacing.sm },
+  cancelBtn: { flex: 1, padding: spacing.sm, borderRadius: borderRadius.md, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
+  cancelText: { color: colors.textMuted, fontWeight: '700', fontSize: fontSize.sm },
+  saveBtn: { flex: 1, padding: spacing.sm, borderRadius: borderRadius.md, backgroundColor: colors.accent, alignItems: 'center' },
+  saveText: { color: colors.white, fontWeight: '700', fontSize: fontSize.sm },
+  profileInfo: { alignItems: 'center', gap: spacing.xs },
+  displayName: { color: colors.text, fontWeight: '700', fontSize: fontSize.lg },
+  bio: { color: colors.textMuted, fontSize: fontSize.sm, textAlign: 'center', paddingHorizontal: spacing.xl, lineHeight: 18 },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: 'rgba(216,90,48,0.06)', borderRadius: borderRadius.md },
+  linkText: { color: colors.accent, fontSize: fontSize.xs, fontWeight: '600', textDecorationLine: 'underline', maxWidth: 200 },
+  actionRow: { marginTop: spacing.sm },
+  followBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.accent, paddingVertical: spacing.sm, paddingHorizontal: spacing.xl, borderRadius: borderRadius.lg },
   followBtnText: { color: colors.white, fontWeight: '700', fontSize: fontSize.sm },
-  supportBtn: {
-    flexDirection: 'row',
-    backgroundColor: '#F59E0B',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  supportBtnText: { color: colors.white, fontWeight: '700', fontSize: fontSize.sm },
   editProfileBtn: {
-    flexDirection: 'row',
-    backgroundColor: colors.bgCard,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-    gap: spacing.xs,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.xl, borderRadius: borderRadius.lg,
   },
   editProfileText: { color: colors.accent, fontWeight: '700', fontSize: fontSize.sm },
-  editForm: { width: '100%', gap: spacing.sm },
-  editInput: {
-    backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    color: colors.text,
-    fontSize: fontSize.sm,
-  },
-  editBio: { height: 60, textAlignVertical: 'top' },
-  editActions: { flexDirection: 'row', gap: spacing.sm },
-  cancelBtn: {
-    flex: 1,
-    backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-  },
-  cancelText: { color: colors.textMuted, fontWeight: '600', fontSize: fontSize.sm },
-  saveBtn: {
-    flex: 1,
-    backgroundColor: colors.accent,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-  },
-  saveText: { color: colors.white, fontWeight: '700', fontSize: fontSize.sm },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.xxl,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
+  statsRow: { flexDirection: 'row', gap: spacing.xxl, paddingVertical: spacing.md },
   statItem: { alignItems: 'center' },
-  statValue: { color: colors.text, fontSize: fontSize.lg, fontWeight: '700' },
-  statLabel: { color: colors.textMuted, fontSize: fontSize.xs, fontWeight: '500' },
+  statValue: { color: colors.text, fontWeight: '700', fontSize: fontSize.md },
+  statLabel: { color: colors.textMuted, fontSize: fontSize.xs },
   creatorToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.bgCard,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.lg,
-    width: '100%',
+    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.xl, borderRadius: borderRadius.lg, width: '100%', justifyContent: 'center',
   },
   creatorText: { color: colors.text, fontWeight: '600', fontSize: fontSize.sm },
   tabRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    paddingHorizontal: spacing.lg,
   },
   tab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.md,
     gap: spacing.xs,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
   tabActive: { borderBottomColor: colors.accent },
-  tabText: { color: colors.textMuted, fontSize: fontSize.sm, fontWeight: '600' },
-  tabTextActive: { color: colors.text, fontWeight: '700' },
+  tabText: { color: colors.textMuted, fontSize: fontSize.xs, fontWeight: '700' },
+  tabTextActive: { color: colors.text },
 });

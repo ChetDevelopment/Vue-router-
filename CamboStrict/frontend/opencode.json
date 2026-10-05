@@ -1,0 +1,64 @@
+{
+  "project": {
+    "name": "CamboStrict (River)",
+    "description": "A production-quality short-video social platform for Cambodia",
+    "version": "2.0.0"
+  },
+  "stack": {
+    "frontend": {
+      "framework": "React Native + Expo SDK 54",
+      "language": "TypeScript",
+      "routing": "expo-router (file-based)",
+      "state": "Zustand v5",
+      "ui": "Custom components + lucide-react-native icons"
+    },
+    "backend": {
+      "framework": "Spring Boot 2.7.18 (Java 11)",
+      "database": "MySQL/MariaDB via sqlite-jdbc",
+      "migrations": "Flyway",
+      "auth": "JWT (jjwt 0.12.5) + BCrypt",
+      "api": "REST (JSON)"
+    }
+  },
+  "skills": {
+    "configPath": ".opencode/skills.json",
+    "autoLoad": [
+      "ai-identity",
+      "engineering-mindset",
+      "critical-thinking",
+      "product-thinking",
+      "software-architecture",
+      "database-design",
+      "api-design",
+      "backend-engineering",
+      "frontend-engineering",
+      "state-management",
+      "security-engineering",
+      "authentication",
+      "authorization",
+      "input-validation",
+      "error-handling",
+      "testing",
+      "definition-of-done"
+    ]
+  },
+  "workflow": {
+    "beforeCode": [
+      "ai-identity",
+      "engineering-mindset",
+      "critical-thinking",
+      "product-thinking"
+    ],
+    "duringCode": [
+      "software-architecture",
+      "api-design",
+      "database-design",
+      "backend-engineering",
+      "frontend-engineering"
+    ],
+    "beforeSubmit": [
+      "testing",
+      "definition-of-done"
+    ]
+  }
+}

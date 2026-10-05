@@ -45,12 +45,4 @@ export const borderRadius = {
   xxl: 24,
 } as const;
 
-export const fullRadius = 9999;
-
-export const iconSize = {
-  xs: 14,
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 28,
-} as const;
+export const TAB_BAR_HEIGHT = 65;
